@@ -46,5 +46,9 @@ python mi_e20 serv --ip 192.168.1.111 --port 80
 mirobo --ip=192.168.1.125 --token=6d373af1e425a35705b812cd81d8a5b2 raw_command user.dnld_install_sound '{"url":"http://192.168.1.111/out.pkg", "sver":1, "md5":"fc8f45999775089449019df9dbc3b2a9", "sid":3}'
 ```
 В данном случае "sver" и "sid" жестко прописаны в скриптах и их менять не стоит. "md5" пылесос не проверяет, он может быть любой.
+Для проверки состояния можно воспользоваться командой.
+```
+mirobo --ip=192.168.1.125 --token=6d373af1e425a35705b812cd81d8a5b2 raw_command  get_sound_progress
+```
 
 <a href="http://4pda.ru/forum/index.php?showtopic=901809">Тема на 4PDA</a>
