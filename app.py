@@ -1,18 +1,23 @@
 import sys  # sys нужен для передачи argv в QApplication
 from PyQt5 import uic
 from PyQt5.QtWidgets import QListWidgetItem, QMainWindow, QApplication, QWidget
+import configparser
 
 
-#import design  # Это наш конвертированный файл дизайна
 
+config_name = 'config.ini'
+config_code = 'utf-8'
 
 form_base = 'untitled.ui'
 form_row = 'row.ui'
 
 
-class QCustomQWidget (QWidget):
+
+
+
+class Row (QWidget):
 	def __init__ (self):
-		super(QCustomQWidget, self).__init__()
+		super(Row, self).__init__()
 		uic.loadUi(form_row, self)
 
 	def setInfo(self, text):
@@ -20,9 +25,6 @@ class QCustomQWidget (QWidget):
 
 	def setNumber(self, n):
 		self.l_number.setText(n)
-
-	def setInfo(self, text):
-		self.info.setText(text)
 
 
 
@@ -33,17 +35,34 @@ class ExampleApp(QMainWindow):
 		super(ExampleApp, self).__init__()
 		uic.loadUi(form_base, self)
 
-		self.pushButton.clicked.connect(self.browse_folder)
+		self._cfg = configparser.ConfigParser()
+		self._cfg.read(config_name, encoding=config_code)
+
+		count = self._cfg.getint('DEFAULT', 'count')
+		count = self._cfg.getint('DEFAULT', 'count')
+
+		#range(count)
+		for i in range(10):
+			n = str(i)
+			self._addRow(n)
 
 
-	def browse_folder(self):
-		myQCustomQWidget = QCustomQWidget()
+
+
+
+
+	def _addRow(self, n):
+		item_conf = self._cfg['item-' + n]
+
+		row = Row()
+		row.setNumber(n)
+		row.setInfo(item_conf['info'])
+
 		myQListWidgetItem = QListWidgetItem(self.listWidget)
 
-		myQListWidgetItem.setSizeHint(myQCustomQWidget.size())
-		print(myQCustomQWidget.size())
+		myQListWidgetItem.setSizeHint(row.size())
 		self.listWidget.addItem(myQListWidgetItem)
-		self.listWidget.setItemWidget(myQListWidgetItem, myQCustomQWidget)
+		self.listWidget.setItemWidget(myQListWidgetItem, row)
 
 
 

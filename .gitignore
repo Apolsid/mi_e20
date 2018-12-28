@@ -1,0 +1,5 @@
+build
+dist
+env
+out
+__pycache__

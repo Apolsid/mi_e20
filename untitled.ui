@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>619</width>
+    <width>620</width>
     <height>425</height>
    </rect>
   </property>
@@ -20,25 +20,12 @@
    <string>Package manager (XiaoWa E20)</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QPushButton" name="pushButton">
-    <property name="geometry">
-     <rect>
-      <x>230</x>
-      <y>300</y>
-      <width>75</width>
-      <height>23</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>PushButton</string>
-    </property>
-   </widget>
    <widget class="QListWidget" name="listWidget">
     <property name="geometry">
      <rect>
-      <x>210</x>
+      <x>10</x>
       <y>30</y>
-      <width>256</width>
+      <width>600</width>
       <height>192</height>
      </rect>
     </property>
@@ -49,7 +36,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>619</width>
+     <width>620</width>
      <height>21</height>
     </rect>
    </property>
