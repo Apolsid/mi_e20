@@ -15,6 +15,16 @@ class QCustomQWidget (QWidget):
 		super(QCustomQWidget, self).__init__()
 		uic.loadUi(form_row, self)
 
+	def setInfo(self, text):
+		self.l_info.setText(text)
+
+	def setNumber(self, n):
+		self.l_number.setText(n)
+
+	def setInfo(self, text):
+		self.info.setText(text)
+
+
 
 
 
@@ -23,13 +33,15 @@ class ExampleApp(QMainWindow):
 		super(ExampleApp, self).__init__()
 		uic.loadUi(form_base, self)
 
-		self.btnBrowse.clicked.connect(self.browse_folder)
+		self.pushButton.clicked.connect(self.browse_folder)
 
 
 	def browse_folder(self):
 		myQCustomQWidget = QCustomQWidget()
 		myQListWidgetItem = QListWidgetItem(self.listWidget)
 
+		myQListWidgetItem.setSizeHint(myQCustomQWidget.size())
+		print(myQCustomQWidget.size())
 		self.listWidget.addItem(myQListWidgetItem)
 		self.listWidget.setItemWidget(myQListWidgetItem, myQCustomQWidget)
 
