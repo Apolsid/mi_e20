@@ -1,0 +1,103 @@
+Description
+===========
+
+
+a = miio.Vacuum('192.168.1.125','4826f908c688d5b4b0f53c9fbb261a4b')
+>>> a.raw_command('get_status', [])
+
+
+
+An example Hello World project.
+
+
+4826f908c688d5b4b0f53c9fbb261a4b
+
+
+mirobo --ip=192.168.1.125 --token=4826f908c688d5b4b0f53c9fbb261a4b raw-command  user.get_status
+mirobo --ip=192.168.1.125 --token=4826f908c688d5b4b0f53c9fbb261a4b raw-command  user.find_me
+mirobo --ip=192.168.1.125 --token=4826f908c688d5b4b0f53c9fbb261a4b raw-command  user.get_current_sound
+
+
+mirobo --ip=192.168.1.125 --token=4826f908c688d5b4b0f53c9fbb261a4b raw-command user.dnld_install_sound '{"url":"http://192.168.1.62/out.pkg", "sver":1, "md5":"fc8f45999775089449019df9dbc3b2a9", "sid":3}'
+
+mirobo --ip=192.168.1.125 --token=4826f908c688d5b4b0f53c9fbb261a4b raw-command user.dnld_install_sound '{"url":"http://awsbj0.fds.api.xiaomi.com/sapphire/app/voice-pkg/package/english.pkg", "sver":1, "md5":"fc8f45999775089449019df9dbc3b2a9", "sid":3}'
+
+
+mirobo --ip=192.168.1.125 --token=4826f908c688d5b4b0f53c9fbb261a4b raw-command user.dnld_install_sound '{"url":"http://192.168.1.62/sapphire/app/voice-pkg/package/english.pkg", "sver":1, "md5":"fc8f45999775089449019df9dbc3b2a9", "sid":3}'
+
+
+mirobo --ip=192.168.1.125 --token=4826f908c688d5b4b0f53c9fbb261a4b raw-command  user.get_sound_progress
+
+
+get_status
+
+
+
+
+{  "id": 25736111,  "method": "app_goto_target",  "params": [24200,20200]}
+
+https_proxy="127.0.0.1:8888" 
+http_proxy="127.0.0.1:8888"
+
+
+[DEFAULT]
+server_ip = 1921.6
+robot_ip = 192.168.1.
+robot_tocken = asd
+count = 109
+
+[item-0]
+file = 0.mp3
+hidden = False
+info = Проигрывание музыки
+
+[item-1]
+file = 1.mp3
+hidden = no
+info = Проигрывание музыки
+
+[item-2]
+file = 2.mp3
+hidden = no
+info = Проигрывание музыки
+
+[item-3]
+file = 3.mp3
+hidden = no
+info = Проигрывание музыки
+
+[item-4]
+file = 4.mp3
+hidden = True
+info = Проигрывание музыки
+
+[item-5]
+file = 5.mp3
+hidden = True
+info = Проигрывание музыки
+
+[item-6]
+file = 6.mp3
+hidden = no
+info = Проигрывание музыки
+
+[item-7]
+file = 7.mp3
+hidden = no
+info = Проигрывание музыки
+
+[item-8]
+file = 8.mp3
+hidden = no
+info = Проигрывание музыки
+
+[item-9]
+file = 9.mp3
+hidden = no
+info = Проигрывание музыки
+
+[item-10]
+file = 10.mp3
+hidden = no
+info = Проигрывание музыки
+
