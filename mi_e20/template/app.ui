@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>809</width>
-    <height>593</height>
+    <height>614</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -487,6 +487,34 @@ border: 1px solid gray;</string>
     </sizepolicy>
    </property>
   </widget>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>809</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuHelp">
+    <property name="title">
+     <string>Help</string>
+    </property>
+    <addaction name="m_forum"/>
+    <addaction name="m_about"/>
+   </widget>
+   <addaction name="menuHelp"/>
+  </widget>
+  <action name="m_forum">
+   <property name="text">
+    <string>Forum (ru)</string>
+   </property>
+  </action>
+  <action name="m_about">
+   <property name="text">
+    <string>About</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections/>

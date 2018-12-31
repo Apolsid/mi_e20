@@ -1,7 +1,8 @@
 ﻿import sys, os, configparser, miio
 from PyQt5 import uic
 from PyQt5.QtWidgets import QListWidgetItem, QMainWindow, QApplication, QWidget, QFileDialog
-from PyQt5.QtCore import QStringListModel
+from PyQt5.QtCore import QStringListModel, QUrl
+from PyQt5.QtGui import QDesktopServices
 from threading import Thread
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 
@@ -16,6 +17,7 @@ config_item_name = 'item-'
 
 form_base = 'mi_e20/template/app.ui'
 form_row = 'mi_e20/template/row.ui'
+form_about = 'mi_e20/template/about.ui'
 
 base_file_path = 'mi_e20/base'
 
@@ -138,6 +140,10 @@ class Row (QWidget):
 		self.l_file.setText(os.path.basename(self._user_file) if b0 else self._base_file)
 
 
+class About(QMainWindow):
+	def __init__(self, parent=None):
+		super(About, self).__init__()
+		uic.loadUi(form_about, self)
 
 
 class WindowApp(QMainWindow):
@@ -156,6 +162,10 @@ class WindowApp(QMainWindow):
 	def __init__(self):
 		super(WindowApp, self).__init__()
 		uic.loadUi(form_base, self)
+
+		self.form_about = About()
+		self.m_forum.triggered.connect(self._to_forum)
+		self.m_about.triggered.connect(self._to_about)
 
 		self._rows = list()
 
@@ -203,6 +213,12 @@ class WindowApp(QMainWindow):
 		self._robot_check_state()
 
 
+	def _to_forum(self):
+		url = QUrl('http://4pda.ru/forum/index.php?showtopic=901809')
+		QDesktopServices.openUrl(url)
+
+	def _to_about(self):
+		self.form_about.show()
 
 	def _get_conf_param(self, p):
 		return self._cfg.get(self._conf_Def, p)
