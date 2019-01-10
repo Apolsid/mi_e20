@@ -142,7 +142,7 @@ def serv(ip, port):
 
 
 
-def run():
+def main():
 	task = sys.argv[1]
 
 	if task == 'pack':
@@ -171,4 +171,4 @@ def run():
 
 
 if __name__ == '__main__':
-	run()
+	main()

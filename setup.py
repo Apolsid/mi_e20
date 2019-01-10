@@ -13,7 +13,8 @@ setup(
 	long_description=open(join(dirname(__file__), 'README.md')).read(),
 	entry_points={
 		'console_scripts': [
-			'mi_e20 = mi_e20.app:main'
+			'mi_e20 = mi_e20.app:main',
+			'mi_e20_core = mi_e20.core:main'
 			]
 		},
 	install_requires=[
