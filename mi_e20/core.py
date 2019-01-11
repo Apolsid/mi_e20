@@ -92,7 +92,7 @@ begin_arr = 0x30
 offset_arr = 0x10
 
 
-def unpack(path_out, path_file):
+def Unpack(path_out, path_file):
 	with open(path_file, 'rb+') as f:
 		data = f.read()
 
@@ -158,7 +158,7 @@ def main():
 		parser.add_argument('-p', dest='path_out', help='path for list mp3', type=str, default='out')
 		parser.add_argument('-f', dest='path_file', help='path for file', type=str, default=None)
 		arg = parser.parse_args()
-		unpack(arg.path_out, arg.path_file)
+		Unpack(arg.path_out, arg.path_file)
 
 	elif task == 'serv':
 		parser = argparse.ArgumentParser()

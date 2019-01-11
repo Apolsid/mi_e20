@@ -1,13 +1,20 @@
-﻿import sys, os, configparser, miio
-from PyQt5 import uic
+﻿import sys, os, configparser, miio, os.path, time
+from PyQt5 import uic, QtMultimedia
 from PyQt5.QtWidgets import QListWidgetItem, QMainWindow, QApplication, QWidget, QFileDialog
 from PyQt5.QtCore import QStringListModel, QUrl
 from PyQt5.QtGui import QDesktopServices
 from threading import Thread
 from http.server import HTTPServer, SimpleHTTPRequestHandler
-
-from mi_e20.core import Transport
+from playsound import playsound
+from mi_e20.core import Transport, Unpack
 from shutil import copyfile
+
+
+base_pkg_en = 'mi_e20/english.pkg'
+base_pkg_ru = 'mi_e20/ru.pkg'
+
+base_path_en = 'mi_e20/base_en'
+base_path_ru = 'mi_e20/base_ru'
 
 
 
@@ -18,9 +25,6 @@ config_item_name = 'item-'
 form_base = 'mi_e20/template/app.ui'
 form_row = 'mi_e20/template/row.ui'
 form_about = 'mi_e20/template/about.ui'
-
-base_file_path = 'mi_e20/base'
-
 
 
 class ServerBase(SimpleHTTPRequestHandler):
@@ -56,11 +60,45 @@ class Server(Thread):
 
 
 
+class _Player(Thread):
+	_player = None
+	_row = None
+
+	def __init__(self):
+		Thread.__init__(self)
+		self._player = QtMultimedia.QMediaPlayer()
+		self._player.mediaStatusChanged.connect(self._on_mediaStatus)
+
+	def _on_mediaStatus(self, status):
+		if status == QtMultimedia.QMediaPlayer.EndOfMedia:
+			self.stop()
+
+	def play(self, row, path):
+		self.stop()
+
+		self._row = row
+		sound = QtMultimedia.QMediaContent(QUrl.fromLocalFile(path))
+		self._player.setMedia(sound)
+		self._player.setVolume(100)
+		self._player.play()
+
+
+	def stop(self):
+		if self._row:
+			self._player.stop()
+			self._row.playEnd()
+			self._row == None
+
+
+
+Player = _Player()
 
 
 
 
 class Row (QWidget):
+	_app = None
+
 	_base_file = None
 	_user_file = None
 	_hidden = None
@@ -69,24 +107,23 @@ class Row (QWidget):
 	_conf = None
 	_n = None
 
-	def __init__ (self):
+	def __init__ (self, app):
 		super(Row, self).__init__()
 		uic.loadUi(form_row, self)
+
+		self._app = app
 
 		self.cb_custom.stateChanged.connect(lambda:self._setCustom(self.cb_custom.isChecked()))
 		self.cb_hidden.stateChanged.connect(lambda:self._setHidden(self.cb_hidden.isChecked()))
 
 		self.btn_file.clicked.connect(self._updateFile)
+		self.btn_play.clicked.connect(self._play)
 
 	def getFileData(self):
 		data = b''
 		if not self._hidden:
-			if self._custom:
-				with open(self._user_file, 'rb+') as f:
-					data = f.read()
-			else:
-				with open(base_file_path + '/' + self._base_file, 'rb+') as f:
-					data = f.read()
+			with open(self._getPathFile(), 'rb+') as f:
+				data = f.read()
 
 		return data
 
@@ -108,6 +145,15 @@ class Row (QWidget):
 		self.l_number.setText(n)
 		self.l_info.setText(item_conf['info'])
 		self._updateState()
+
+	def playEnd(self):
+		self.btn_play.setText('>')
+
+	def _getPathFile(self):
+		if self._custom:
+			return self._user_file
+		else:
+			return self._app.getBaseFilePath(self._base_file)
 
 	def _updateFile(self):
 		file = QFileDialog.getOpenFileName(self, 'Выберите mp3 файл', '', 'Sound Files (*.mp3)')[0]
@@ -139,6 +185,18 @@ class Row (QWidget):
 
 		self.l_file.setText(os.path.basename(self._user_file) if b0 else self._base_file)
 
+	def _play(self):
+		try:
+			if self.btn_play.text() == '>':
+				Player.play(self, self._getPathFile())
+				self.btn_play.setText('l l')
+			else:
+				Player.stop()
+
+		except Exception as e:
+			self._app.showInfo(str(e))
+
+
 
 class About(QMainWindow):
 	def __init__(self, parent=None):
@@ -149,6 +207,8 @@ class About(QMainWindow):
 class WindowApp(QMainWindow):
 	_count = 109
 	_rows = None
+
+	_pkg_base = None
 
 	_server_ip = None
 	_server_worker = None
@@ -197,6 +257,13 @@ class WindowApp(QMainWindow):
 			n = str(i)
 			self._addRow(n)
 
+		self._pkg_base = self._get_conf_param('pkg_base')
+		self.rb_pkg_ru.setChecked(True if self._pkg_base == 'ru' else False)
+		self.rb_pkg_en.setChecked(True if self._pkg_base == 'en' else False)
+
+		self.rb_pkg_ru.toggled.connect(lambda:self._on_pkg(self.rb_pkg_ru.isChecked(), 'ru'))
+		self.rb_pkg_en.toggled.connect(lambda:self._on_pkg(self.rb_pkg_ru.isChecked(), 'en'))
+
 		self._server_ip = self._get_conf_param('server_ip')
 		self.e_server_ip.setText(self._server_ip)
 
@@ -234,6 +301,9 @@ class WindowApp(QMainWindow):
 		r = miio.Vacuum(self._robot_ip, self._robot_tocken)
 		self.showInfo(str(r.raw_command('get_sound_progress', [])))
 
+	def _on_pkg(self, b, pkg):
+		self._pkg_base = pkg
+		self._set_conf_param('pkg_base', pkg)
 
 
 	def _on_make(self):
@@ -313,7 +383,7 @@ class WindowApp(QMainWindow):
 
 
 	def _addRow(self, n):
-		row = Row()
+		row = Row(self)
 		row.setBaseInfo(n, self._cfg)
 
 		listWidget = QListWidgetItem(self.list_rows)
@@ -337,6 +407,26 @@ class WindowApp(QMainWindow):
 
 		self._on_server_stop()
 
+
+	def getBaseFilePath(self, file):
+		path = None
+		base_pkg = None
+
+		if self._pkg_base == 'ru':
+			path = base_path_ru
+			base_pkg = base_pkg_ru
+		elif self._pkg_base == 'en':
+			path = base_path_en
+			base_pkg = base_pkg_en
+		else:
+			raise Exception('Unkown base pkg')
+
+		result = path + '/' + file
+
+		if not os.path.isfile(result):
+			Unpack(path, base_pkg)
+
+		return result
 
 
 
