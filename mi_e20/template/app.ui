@@ -255,7 +255,7 @@
               <item>
                <widget class="QPushButton" name="btn_robot_info">
                 <property name="text">
-                 <string>Info</string>
+                 <string>Status</string>
                 </property>
                </widget>
               </item>

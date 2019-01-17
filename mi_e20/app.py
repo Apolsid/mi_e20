@@ -32,13 +32,12 @@ class ServerBase(SimpleHTTPRequestHandler):
 
 
 
-class RoborClient(Thread):
+class RoborClient():
 	ip = None
 	tocken = None
 	_showInfo = None
 
 	def __init__(self, showInfo):
-		Thread.__init__(self)
 		self._showInfo = showInfo
 
 
@@ -51,25 +50,31 @@ class RoborClient(Thread):
 	def setToken(self, tocken):
 		self.tocken = tocken
 
-	def send(self, com):
+	def send(self, com, p = None):
+		args = None
+
+		if com == 'info':
+			args = ('get_status', [])
+
+		elif com == 'sound_info':
+			args = ('get_current_sound', [])
+
+		elif com == 'sound_progress':
+			args = ('get_sound_progress', [])
+
+		elif com == 'sound_install':
+			url = p['url']
+			args = ('dnld_install_sound', [{"url":url, "sver":1, "md5":"fc8f45999775089449019df9dbc3b2a9", "sid":3}])
+
+		t = Thread(target = self._send, args = args)
+		t.start()
+
+	def _send(self, com, arr):
 		try:
 			r = miio.Vacuum(self.ip, self.tocken)
-
-			if com == 'info':
-				self._showInfo(str(r.raw_command('get_status', [])))
-
-			elif com == 'info_sound':
-				self._showInfo(str(r.raw_command('get_sound_progress', [])))
-
+			self._showInfo(str(r.raw_command(com, arr)))
 		except Exception as e:
 			self._showInfo(str(e))
-
-
-	def stop(self):
-		if self._server:
-			self._server.shutdown()
-			self._server = None
-
 
 
 
@@ -102,12 +107,11 @@ class Server(Thread):
 
 
 
-class _Player(Thread):
+class _Player():
 	_player = None
 	_row = None
 
 	def __init__(self):
-		Thread.__init__(self)
 		self._player = QtMultimedia.QMediaPlayer()
 		self._player.mediaStatusChanged.connect(self._on_mediaStatus)
 
@@ -324,7 +328,6 @@ class WindowApp(QMainWindow):
 		self.e_robot_tocken.setText(robot_tocken)
 
 
-
 		self._server_check_state()
 		self._robot_check_state()
 
@@ -346,7 +349,7 @@ class WindowApp(QMainWindow):
 		self._robot_clien.send('info')
 
 	def _on_robot_info_sound(self):
-		self._robot_clien.send('info_sound')
+		self._robot_clien.send('sound_info')
 
 	def _on_pkg(self, b, pkg):
 		self._pkg_base = pkg
@@ -406,10 +409,7 @@ class WindowApp(QMainWindow):
 	def  _on_server_send(self):
 		copyfile(self._server_file, '_.pkg')
 		url = 'http://' + self._server_ip + '/_.pkg'
-
-		r = miio.Vacuum(self._robot_ip, self._robot_tocken)
-		result = r.raw_command('dnld_install_sound', [{"url":url, "sver":1, "md5":"fc8f45999775089449019df9dbc3b2a9", "sid":3}])
-		self.showInfo(str(result))
+		self._robot_clien.send('sound_install', {'url': url})
 
 
 	def _on_robot_ip(self, ip):
