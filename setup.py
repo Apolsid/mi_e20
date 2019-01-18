@@ -10,7 +10,7 @@ setup(
 	name='mi_e20',
 	version= '0.8.5',
 	packages=find_packages(),
-	long_description=open(join(dirname(__file__), 'README.md')).read(),
+	long_description=open(join(dirname(__file__), 'README.md'), encoding="utf-8").read(),
 	entry_points={
 		'console_scripts': [
 			'mi_e20 = mi_e20.app:main',

@@ -2,4 +2,7 @@ build
 dist
 env
 out
+mi_e20.egg-info
 __pycache__
+
+_.pkg

@@ -5,7 +5,6 @@ from PyQt5.QtCore import QStringListModel, QUrl
 from PyQt5.QtGui import QDesktopServices
 from threading import Thread
 from http.server import HTTPServer, SimpleHTTPRequestHandler
-from playsound import playsound
 from mi_e20.core import Transport, Unpack
 from shutil import copyfile
 
@@ -301,7 +300,7 @@ class WindowApp(QMainWindow):
 
 		self._cfg = configparser.ConfigParser()
 
-		with open(config_name) as f:
+		with open(config_name, encoding="utf-8") as f:
 			self._cfg.read_file(f)
 
 		for i in range(self._count):
@@ -450,7 +449,7 @@ class WindowApp(QMainWindow):
 		self.list_info.scrollToTop()
 
 	def end(self):
-		with open(config_name, 'w') as f:
+		with open(config_name, 'w', encoding="utf-8") as f:
 			self._cfg.write(f)
 
 		self._on_server_stop()
