@@ -1,12 +1,16 @@
 ﻿import sys, os, configparser, miio, os.path, time
 from PyQt5 import uic, QtMultimedia
 from PyQt5.QtWidgets import QListWidgetItem, QMainWindow, QApplication, QWidget, QFileDialog
-from PyQt5.QtCore import QStringListModel, QUrl
+from PyQt5.QtCore import QStringListModel, QUrl, QDir
 from PyQt5.QtGui import QDesktopServices
 from threading import Thread
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from mi_e20.core import Transport, Unpack
 from shutil import copyfile
+from datetime import datetime
+
+
+Player = None
 
 
 base_pkg_en = 'mi_e20/english.pkg'
@@ -69,11 +73,13 @@ class RoborClient():
 		t.start()
 
 	def _send(self, com, arr):
+		i = self._showInfo(com + '...')
 		try:
 			r = miio.Vacuum(self.ip, self.tocken)
-			self._showInfo(str(r.raw_command(com, arr)))
+			self._showInfo(str(r.raw_command(com, arr)), i)
+
 		except Exception as e:
-			self._showInfo(str(e))
+			self._showInfo(str(e), i)
 
 
 
@@ -122,7 +128,7 @@ class _Player():
 		self.stop()
 
 		self._row = row
-		sound = QtMultimedia.QMediaContent(QUrl.fromLocalFile(path))
+		sound = QtMultimedia.QMediaContent(path)
 		self._player.setMedia(sound)
 		self._player.setVolume(100)
 		self._player.play()
@@ -133,10 +139,6 @@ class _Player():
 			self._player.stop()
 			self._row.playEnd()
 			self._row == None
-
-
-
-Player = _Player()
 
 
 
@@ -198,10 +200,13 @@ class Row (QWidget):
 		self.btn_play.setText('>')
 
 	def _getPathFile(self):
+		path = None
 		if self._custom:
-			return self._user_file
+			path = self._user_file
 		else:
-			return self._app.getBaseFilePath(self._base_file)
+			path = os.getcwd() + "/" + self._app.getBaseFilePath(self._base_file)
+
+		return path
 
 	def _updateFile(self):
 		file = QFileDialog.getOpenFileName(self, 'Выберите mp3 файл', '', 'Sound Files (*.mp3)')[0]
@@ -236,7 +241,8 @@ class Row (QWidget):
 	def _play(self):
 		try:
 			if self.btn_play.text() == '>':
-				Player.play(self, self._getPathFile())
+				p = QUrl.fromLocalFile(self._getPathFile())
+				Player.play(self, p)
 				self.btn_play.setText('l l')
 			else:
 				Player.stop()
@@ -329,6 +335,9 @@ class WindowApp(QMainWindow):
 
 		self._server_check_state()
 		self._robot_check_state()
+
+		global Player 
+		Player = _Player()
 
 
 	def _to_forum(self):
@@ -442,11 +451,18 @@ class WindowApp(QMainWindow):
 		self._rows.append(row)
 
 
-	def showInfo(self, msg):
+	def showInfo(self, msg, i = None):
 		l = self.list_info_model.stringList()
-		l.insert(0, msg)
-		self.list_info_model.setStringList(l)
-		self.list_info.scrollToTop()
+		if i == None:
+			
+			i = len(l)
+			l.append(datetime.now().strftime('%H:%M:%S - ') + msg)
+			self.list_info_model.setStringList(l)
+			self.list_info.scrollToBottom()
+			return i
+		else:
+			l[i] = l[i][0:11] + msg
+			self.list_info_model.setStringList(l)
 
 	def end(self):
 		with open(config_name, 'w', encoding="utf-8") as f:
@@ -481,7 +497,7 @@ def main():
 	app = QApplication(sys.argv)
 	window = WindowApp()
 	window.show()
-	app.exec_()
+	app.exec()
 
 	window.end()
 
