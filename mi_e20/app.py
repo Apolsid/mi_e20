@@ -1,4 +1,4 @@
-import sys, os, configparser, miio, os.path, time
+﻿import sys, os, configparser, miio, os.path, time
 from PyQt5 import uic, QtMultimedia
 from PyQt5.QtWidgets import QListWidgetItem, QMainWindow, QApplication, QWidget, QFileDialog
 from PyQt5.QtCore import QStringListModel, QUrl, QDir
