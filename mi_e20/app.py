@@ -1,12 +1,16 @@
-﻿import sys, os, configparser, miio, os.path, time
+import sys, os, configparser, miio, os.path, time
 from PyQt5 import uic, QtMultimedia
 from PyQt5.QtWidgets import QListWidgetItem, QMainWindow, QApplication, QWidget, QFileDialog
-from PyQt5.QtCore import QStringListModel, QUrl
+from PyQt5.QtCore import QStringListModel, QUrl, QDir
 from PyQt5.QtGui import QDesktopServices
-from threading import Thread
+from threading import Thread, Timer
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from mi_e20.core import Transport, Unpack
 from shutil import copyfile
+from datetime import datetime
+
+
+Player = None
 
 
 base_pkg_en = 'mi_e20/english.pkg'
@@ -49,31 +53,36 @@ class RoborClient():
 	def setToken(self, tocken):
 		self.tocken = tocken
 
-	def send(self, com, p = None):
+	def send(self, com, onComplit = None, p = None):
 		args = None
 
 		if com == 'info':
-			args = ('get_status', [])
+			args = ('get_status', onComplit, [])
 
 		elif com == 'sound_info':
-			args = ('get_current_sound', [])
+			args = ('get_current_sound', onComplit, [])
 
 		elif com == 'sound_progress':
-			args = ('get_sound_progress', [])
+			args = ('get_sound_progress', onComplit, [])
 
 		elif com == 'sound_install':
 			url = p['url']
-			args = ('dnld_install_sound', [{"url":url, "sver":1, "md5":"fc8f45999775089449019df9dbc3b2a9", "sid":3}])
+			args = ('dnld_install_sound', onComplit, [{"url":url, "sver":1, "md5":"fc8f45999775089449019df9dbc3b2a9", "sid":3}])
 
 		t = Thread(target = self._send, args = args)
 		t.start()
 
-	def _send(self, com, arr):
+	def _send(self, com, onComplit = None, arr):
+		i = self._showInfo(com + '...')
 		try:
 			r = miio.Vacuum(self.ip, self.tocken)
-			self._showInfo(str(r.raw_command(com, arr)))
+			self._showInfo(str(r.raw_command(com, arr)), i)
+
 		except Exception as e:
-			self._showInfo(str(e))
+			self._showInfo(str(e), i)
+
+		finally:
+			onComplit and onComplit()
 
 
 
@@ -122,7 +131,7 @@ class _Player():
 		self.stop()
 
 		self._row = row
-		sound = QtMultimedia.QMediaContent(QUrl.fromLocalFile(path))
+		sound = QtMultimedia.QMediaContent(path)
 		self._player.setMedia(sound)
 		self._player.setVolume(100)
 		self._player.play()
@@ -133,11 +142,6 @@ class _Player():
 			self._player.stop()
 			self._row.playEnd()
 			self._row == None
-
-
-
-Player = _Player()
-
 
 
 
@@ -198,10 +202,13 @@ class Row (QWidget):
 		self.btn_play.setText('>')
 
 	def _getPathFile(self):
+		path = None
 		if self._custom:
-			return self._user_file
+			path = self._user_file
 		else:
-			return self._app.getBaseFilePath(self._base_file)
+			path = os.getcwd() + "/" + self._app.getBaseFilePath(self._base_file)
+
+		return path
 
 	def _updateFile(self):
 		file = QFileDialog.getOpenFileName(self, 'Выберите mp3 файл', '', 'Sound Files (*.mp3)')[0]
@@ -236,7 +243,8 @@ class Row (QWidget):
 	def _play(self):
 		try:
 			if self.btn_play.text() == '>':
-				Player.play(self, self._getPathFile())
+				p = QUrl.fromLocalFile(self._getPathFile())
+				Player.play(self, p)
 				self.btn_play.setText('l l')
 			else:
 				Player.stop()
@@ -330,6 +338,9 @@ class WindowApp(QMainWindow):
 		self._server_check_state()
 		self._robot_check_state()
 
+		global Player 
+		Player = _Player()
+
 
 	def _to_forum(self):
 		url = QUrl('http://4pda.ru/forum/index.php?showtopic=901809')
@@ -345,10 +356,18 @@ class WindowApp(QMainWindow):
 		return self._cfg.set(self._conf_Def, p, v)
 
 	def _on_robot_info(self):
-		self._robot_clien.send('info')
+		self.btn_robot_info.setEnabled(False)
+		self._robot_clien.send('info', self._end_robot_info)
+
+	def _end_robot_info(self):
+		self.btn_robot_info.setEnabled(True)
 
 	def _on_robot_info_sound(self):
-		self._robot_clien.send('sound_info')
+		self.btn_robot_info_sound.setEnabled(False)
+		self._robot_clien.send('sound_info', self._end_robot_info_sound)
+
+	def _end_robot_info_sound(self):
+		self.btn_robot_info_sound.setEnabled(True)
 
 	def _on_pkg(self, b, pkg):
 		self._pkg_base = pkg
@@ -406,10 +425,18 @@ class WindowApp(QMainWindow):
 		self._server_check_state()
 
 	def  _on_server_send(self):
+		self.btn_server_send.setEnabled(False)
+
 		copyfile(self._server_file, '_.pkg')
 		url = 'http://' + self._server_ip + '/_.pkg'
 		self._robot_clien.send('sound_install', {'url': url})
 
+		t = Timer(7, self._check_install)
+		t.start()
+
+
+	def _check_install(self):
+		self._robot_clien.send('sound_progress')
 
 	def _on_robot_ip(self, ip):
 		self._robot_clien.setIP(ip);
@@ -442,11 +469,18 @@ class WindowApp(QMainWindow):
 		self._rows.append(row)
 
 
-	def showInfo(self, msg):
+	def showInfo(self, msg, i = None):
 		l = self.list_info_model.stringList()
-		l.insert(0, msg)
-		self.list_info_model.setStringList(l)
-		self.list_info.scrollToTop()
+		if i == None:
+			
+			i = len(l)
+			l.append(datetime.now().strftime('%H:%M:%S - ') + msg)
+			self.list_info_model.setStringList(l)
+			self.list_info.scrollToBottom()
+			return i
+		else:
+			l[i] = l[i][0:11] + msg
+			self.list_info_model.setStringList(l)
 
 	def end(self):
 		with open(config_name, 'w', encoding="utf-8") as f:
@@ -481,7 +515,7 @@ def main():
 	app = QApplication(sys.argv)
 	window = WindowApp()
 	window.show()
-	app.exec_()
+	app.exec()
 
 	window.end()
 
