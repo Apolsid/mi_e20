@@ -57,32 +57,34 @@ class RoborClient():
 		args = None
 
 		if com == 'info':
-			args = ('get_status', onComplit, [])
+			args = ('get_status', [], onComplit)
 
 		elif com == 'sound_info':
-			args = ('get_current_sound', onComplit, [])
+			args = ('get_current_sound', [], onComplit)
 
 		elif com == 'sound_progress':
-			args = ('get_sound_progress', onComplit, [])
+			args = ('get_sound_progress', [], onComplit)
 
 		elif com == 'sound_install':
 			url = p['url']
-			args = ('dnld_install_sound', onComplit, [{"url":url, "sver":1, "md5":"fc8f45999775089449019df9dbc3b2a9", "sid":3}])
+			args = ('dnld_install_sound', [{"url":url, "sver":1, "md5":"fc8f45999775089449019df9dbc3b2a9", "sid":3}], onComplit)
 
 		t = Thread(target = self._send, args = args)
 		t.start()
 
-	def _send(self, com, onComplit = None, arr):
+	def _send(self, com, arr, onComplit = None):
 		i = self._showInfo(com + '...')
+		info = None
 		try:
 			r = miio.Vacuum(self.ip, self.tocken)
-			self._showInfo(str(r.raw_command(com, arr)), i)
+			info = r.raw_command(com, arr)
+			self._showInfo(str(info), i)
 
 		except Exception as e:
 			self._showInfo(str(e), i)
 
 		finally:
-			onComplit and onComplit()
+			onComplit and onComplit(info)
 
 
 
@@ -140,7 +142,8 @@ class _Player():
 	def stop(self):
 		if self._row:
 			self._player.stop()
-			self._row.playEnd()
+			self._player.setMedia(QtMultimedia.QMediaContent())
+			self._row.onPlayEnd()
 			self._row == None
 
 
@@ -198,7 +201,7 @@ class Row (QWidget):
 		self.l_info.setText(item_conf['info'])
 		self._updateState()
 
-	def playEnd(self):
+	def onPlayEnd(self):
 		self.btn_play.setText('>')
 
 	def _getPathFile(self):
@@ -206,7 +209,7 @@ class Row (QWidget):
 		if self._custom:
 			path = self._user_file
 		else:
-			path = os.getcwd() + "/" + self._app.getBaseFilePath(self._base_file)
+			path =  os.path.abspath(os.path.join(os.getcwd(), self._app.getBaseFilePath(self._base_file)))
 
 		return path
 
@@ -359,14 +362,14 @@ class WindowApp(QMainWindow):
 		self.btn_robot_info.setEnabled(False)
 		self._robot_clien.send('info', self._end_robot_info)
 
-	def _end_robot_info(self):
+	def _end_robot_info(self, info):
 		self.btn_robot_info.setEnabled(True)
 
 	def _on_robot_info_sound(self):
 		self.btn_robot_info_sound.setEnabled(False)
 		self._robot_clien.send('sound_info', self._end_robot_info_sound)
 
-	def _end_robot_info_sound(self):
+	def _end_robot_info_sound(self, info):
 		self.btn_robot_info_sound.setEnabled(True)
 
 	def _on_pkg(self, b, pkg):
@@ -429,14 +432,29 @@ class WindowApp(QMainWindow):
 
 		copyfile(self._server_file, '_.pkg')
 		url = 'http://' + self._server_ip + '/_.pkg'
-		self._robot_clien.send('sound_install', {'url': url})
+		self._robot_clien.send('sound_install', None, {'url': url})
 
-		t = Timer(7, self._check_install)
+		t = Timer(5, self._check_install)
 		t.start()
 
 
 	def _check_install(self):
-		self._robot_clien.send('sound_progress')
+		self._robot_clien.send('sound_progress', self._on_check_install)
+
+	def _on_check_install(self, info):
+		try:
+			p = info[0]
+			if p['error'] != 0:
+				self.btn_server_send.setEnabled(True)
+				self.showInfo(str(info))
+			elif p['progress'] < 100:
+				t = Timer(5, self._check_install)
+				t.start()
+			else:
+				self.btn_server_send.setEnabled(True)
+			
+		except Exception as e:
+			self.showInfo(str(e))
 
 	def _on_robot_ip(self, ip):
 		self._robot_clien.setIP(ip);
@@ -472,7 +490,6 @@ class WindowApp(QMainWindow):
 	def showInfo(self, msg, i = None):
 		l = self.list_info_model.stringList()
 		if i == None:
-			
 			i = len(l)
 			l.append(datetime.now().strftime('%H:%M:%S - ') + msg)
 			self.list_info_model.setStringList(l)
@@ -502,7 +519,7 @@ class WindowApp(QMainWindow):
 		else:
 			raise Exception('Unkown base pkg')
 
-		result = path + '/' + file
+		result = os.path.join(path, file)
 
 		if not os.path.isfile(result):
 			Unpack(path, base_pkg)
